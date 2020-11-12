@@ -24,18 +24,18 @@
     <div id="task-details-form" class="task-details-form">
         
         <label for="account">Account</label>
-        
-        <select id="account" name="account" required />
+        <select id="account" name="account" required>
         {% set count=1 %}
         {% for account in accounts %}
             <option value="{{ count }}">{{ account }}</option>
         {% endfor %}
-            
-        &nbsp; &nbsp; &nbsp;
+        </select>
         
-        <label for="add_account">add new account</label>    
+        &nbsp; &nbsp; &nbsp; &nbsp;
+        
+        <label for="add_account">add new account</label>
         <input type="checkbox" id="add_account" name="add_account" value="0"/>
-    
+
         <div id="new_account_block" class="hidden">
         <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
             id="new_account_name" name="new_account_name" minlength="2" />
