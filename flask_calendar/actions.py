@@ -236,6 +236,7 @@ def edit_task_action(calendar_id: str, year: int, month: int, day: int, task_id:
             max_year=current_app.config["MAX_YEAR"],
             month_names=month_names,
             task=task,
+            accounts=task["account"],
             base_url=current_app.config["BASE_URL"],
             editing=True,
             emojis_enabled=emojis_enabled,
@@ -254,7 +255,7 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
     calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
 
     # For creation of "updated" task use only form data
-    account = request.form["account"].strip()
+    account = request.form["account_select"].strip()
     amount = request.form["amount"].strip()
     credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")
@@ -304,7 +305,7 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
 @authenticated
 @authorized
 def save_task_action(calendar_id: str) -> Response:
-    account = request.form["account"].strip()
+    account = request.form["account_select"].strip()
     amount = request.form["amount"].strip()
     credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")

@@ -15,35 +15,49 @@
 </head>
 <body>
 
-    {% if editing %}
-        <form autocomplete="off" method="POST"
-            action="{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/{{ day }}/task/{{ task.get("id") }}">
-    {% else %}
-        <form autocomplete="off" method="POST" action="{{ base_url }}/{{ calendar_id }}/new_task">
-    {% endif %}
+{% if editing %}
+<form autocomplete="off" method="POST" action="{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/{{ day }}/task/{{ task.get("id") }}">
+{% else %}
+<form autocomplete="off" method="POST" action="{{ base_url }}/{{ calendar_id }}/new_task">
+{% endif %}
+    
     <div id="task-details-form" class="task-details-form">
-        
+        <input type="button" value="poop" id="poopbutt"  hidden>
         <label for="account_select"> Account </label>
-        <select id="account_select" name="account_select" required>
-        {% set count=1 %}
-        {% for account in accounts %}
-            {{ account }}
-            <option value="{{ count }}">{{ account }}</option>
-        {% endfor %}
-        </select>
+        {% if editing %}
+            &nbsp; &nbsp; &nbsp;
+            <input type="text" id="account_select" name="account_select" value="{{ accounts }}" readonly required>
+            
+            <input type="checkbox" id="add_account_checkbox" name="add_account_checkbox" hidden/>
+            <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
+                    id="new_account_name" name="new_account_name" minlength="2" hidden />
+            <input type="button" class="form-button" value="add_account_button" id="add_account_button" title="add_account_button" hidden />
         
-        &nbsp; &nbsp; &nbsp; &nbsp;
+        {% else %}
         
-        <label for="add_account_checkbox"> add new account </label>
-        <input type="checkbox" id="add_account_checkbox" name="add_account_checkbox" value="0"/>
+            <select id="account_select" name="account_select" required>
+                {% set count=1 %}
+                {% for account in accounts %}
+                    {{ account }}
+                    <option value="{{ account }}">{{ account }}</option>
+                {% endfor %}
+            </select>
+            
+        
+            &nbsp; &nbsp; &nbsp; &nbsp;
+            
+            <label for="add_account_checkbox"> add new account </label>
+            <input type="checkbox" id="add_account_checkbox" name="add_account_checkbox" value="0"/>
 
+            
+            <div id="new_account_block" class="hidden">
+                <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
+                    id="new_account_name" name="new_account_name" minlength="2" />
+                
+                <input type="button" class="form-button" value="add_account_button" id="add_account_button" title="add_account_button"/>
+            </div>
         
-        <div id="new_account_block" class="hidden">
-        <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
-            id="new_account_name" name="new_account_name" minlength="2" />
-        
-        <input type="button" class="form-button" value="add_account_button" id="add_account_button" title="add_account_button"/>
-        </div>
+        {% endif %}
         
         <br/>
         <br/>
@@ -197,7 +211,7 @@
             <input type="hidden" value="{{ task.get("color", button_default_color_value) }}" id="color" name="color" />
             <br/>
 
-            {% if emojis_enabled %}
+            {% if emojis_enabled and 0==1 %}
                 {% for emoji in buttons_emojis %}
                     <input class="form-button emoji" type="button" value="{{ emoji }}" />
                 {% endfor %}
@@ -338,7 +352,8 @@
         };
 
         document.getElementById("delete-task").onclick = function() {
-            if (confirm("Remove task '" + document.getElementById("account").value +  "'?") === true) {
+            document.getElementById("poopbutt").hidden = false
+            if (confirm("Remove task '" + document.getElementById("account_select").value +  "'?") === true) {
                 fetch("{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/{{ day }}/{{ task.get("id") }}/",
                     {
                     method: "delete",
