@@ -22,37 +22,59 @@
         <form autocomplete="off" method="POST" action="{{ base_url }}/{{ calendar_id }}/new_task">
     {% endif %}
     <div id="task-details-form" class="task-details-form">
+        
+        <label for="account">Account</label>
+        
+        <select id="account" name="account" required />
+        {% set count=1 %}
+        {% for account in accounts %}
+            <option value="{{ count }}">{{ account }}</option>
+        {% endfor %}
+            
+        &nbsp; &nbsp; &nbsp;
+        
+        <label for="add_account">add new account</label>    
+        <input type="checkbox" id="add_account" name="add_account" value="0"/>
+    
+        <div id="new_account_block" class="hidden">
+        <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
+            id="new_account_name" name="new_account_name" minlength="2" />
+        
+        <input type="button" class="header-button" value="add"
+            onclick="window.location='/{{ calendar_id }}/new_account'" title="add" />
+        </div>
+        <br/>
+        <br/>
 
-        <label for="text">Title</label>
-        <input type="text" autocomplete="off" tabindex="0" placeholder="Title" value="{{ task.get("title", "") }}"
-            id="title" name="title" minlength="2" required />
+        <label for="amount">Amount</label>
+        <input type="number" step="0.01" autocomplete="off" placeholder="0.00" value="{{ task.get("amount", "") }}"
+            id="amount" name="amount" minlength="2" required />
+        <br/>
         <br/>
 
         <label for="date_picker">Date</label>
         <input id="date_picker" type="date" value="{{ task["date"] }}">
         <input type="hidden" id="date" name="date" value="{{ task["date"] }}" />
         <br/>
-
-        <label for="is_all_day">All day event</label>
-        <input type="checkbox" id="is_all_day" name="is_all_day" value="1"
-            {% if task["is_all_day"] %}
+        <br/>
+        
+        
+        <label for="debit">Debit</label>
+        <input type="radio" id="debit" name="credit_debit" value="debit"
+            {% if task["credit_debit"] != "credit" %}
                 checked="checked"
             {% endif %}
-             />
+            />
+        <br/>
+        <label for="credit">Credit</label>
+        <input type="radio" id="credit" name="credit_debit" value="credit"
+            {% if task["credit_debit"] == "credit"  %}
+                checked="checked"
+            {% endif %}
+            />
+        <br/>
         <br/>
 
-        <div id="start_time_block"
-            {% if task["is_all_day"] %}
-                class="hidden"
-            {% endif %}
-             >
-            <label for="start_time">Start time</label>
-            <input type="time" id="start_time" name="start_time" value="{{ task.get("start_time", "00:00") }}" />
-            <br/>
-            <label for="end_time">End time</label>
-            <input type="time" id="end_time" name="end_time" value="{{ task.get("end_time", "00:00") }}" />
-            <br/>
-        </div>
 
         <label for="repeats">Recurrent</label>
         <input type="checkbox" id="repeats" name="repeats" value="1"
@@ -155,6 +177,7 @@
             <input type="hidden" min="0" max="31" id="repetition_value" name="repetition_value" value="0" />
 
         </div>
+        <br/>
 
         <label for="details">Details</label><br/>
         <textarea id="details" name="details" placeholder="Details" autocomplete="off" cols="42"
@@ -230,24 +253,20 @@
     };
 
     window.onload = function() {
-        document.getElementById("is_all_day").onclick = function(eventData) {
+        document.getElementById("add_account").onclick = function(eventData) {
             if (eventData.target.checked === true) {
-                document.getElementById("start_time_block").className = "hidden";
-                document.getElementById("start_time").value ="00:00";
-                document.getElementById("end_time").value ="00:00";
+                document.getElementById("new_account_block").className = "";
+                document.getElementById("account").className = "hidden";
             } else {
-                document.getElementById("start_time_block").className = "";
+                document.getElementById("new_account_block").className = "hidden";
+                document.getElementById("account").className = "";
             }
         };
-
-        document.getElementById("start_time").onchange = function(eventData) {
-            document.getElementById("end_time").value = eventData.target.value;
-        }
-
+        
         document.getElementById("repeats").onclick = function(eventData) {
             if (eventData.target.checked === true) {
-                document.getElementById("type_weekly").checked = true;
-                document.getElementById("subtype_weekly").checked = true;
+                document.getElementById("type_monthly").checked = true;
+                document.getElementById("subtype_monthly").checked = true;
                 document.getElementById("repetition_block").className = "";
                 select_type_weekly();
             } else {
@@ -256,8 +275,8 @@
                 document.getElementById("repetition_value_weekday").disabled = false;
                 document.getElementById("repetition_value_monthday").disabled = true;
                 // and set defaults
-                document.getElementById("type_weekly").checked = true;
-                document.getElementById("subtype_weekly").checked = true;
+                document.getElementById("type_monthly").checked = true;
+                document.getElementById("subtype_monthly").checked = true;
             }
         };
 
@@ -305,8 +324,8 @@
                         return false;
                         break;
                     case "form-button emoji":
-                        let titleTextbox = document.getElementById("title");
-                        titleTextbox.value = eventData.target.value + " " + titleTextbox.value;
+                        let accountTextbox = document.getElementById("account");
+                        accountTextbox.value = eventData.target.value + " " + accountTextbox.value;
                         break;
                     default:
                         return;
@@ -317,7 +336,7 @@
         };
 
         document.getElementById("delete-task").onclick = function() {
-            if (confirm("Remove task '" + document.getElementById("title").value +  "'?") === true) {
+            if (confirm("Remove task '" + document.getElementById("account").value +  "'?") === true) {
                 fetch("{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/{{ day }}/{{ task.get("id") }}/",
                     {
                     method: "delete",

@@ -57,7 +57,7 @@
                 {{ day.day }}</span>
                 <ul class="tasks">
                     {% if day.month|string in tasks and day.day|string in tasks[day.month|string] %}
-                        {% for task in tasks[day.month|string][day.day|string]|sort(attribute="start_time") %}
+                        {% for task in tasks[day.month|string][day.day|string] %}
                             <li
                                 {% if day.month != month %}
                                     class="task greyed"
@@ -71,37 +71,19 @@
                                 data-id="{{ task["id"] }}"
                                 {% if "repetition_type" in task %}data-recurrent="1"{% endif %}>
 
-                                {% if not task["is_all_day"] %}
-                                    <span class="time">{{ task["start_time"] }}{% if task["start_time"] != task["end_time"] %} - {{ task["end_time"] }}{% endif %}</span>
+                                {{ task["account"] }} 
+                                {% if task["credit_debit"] == "debit" %}
+                                    -
+                                {% elif task["credit_debit"] == "credit" %}
+                                    +
                                 {% endif %}
-                                {{ task["title"] }}
+                                {{task["amount"]}}
                                 <p class="accordion-hidden">
                                     {{ task["details"]|task_details_for_markup|safe }}
                                     {% if day.month == month %}
-                                        <a href="#"
-                                            data-id="{{ task["id"] }}"
-                                            data-year="{{ day.year }}"
-                                            data-month="{{ day.month }}"
-                                            data-day="{{ day.day }}"
-                                            data-title="{{ task["title"]|replace("\"","") }}"
-                                            class="button smaller remove-task"
-                                            title="Remove task">x</a>
-                                        {% if "repetition_type" in task %}
-                                            <a href="#"
-                                                data-id="{{ task["id"] }}"
-                                                data-year="{{ day.year }}"
-                                                data-month="{{ day.month }}"
-                                                data-day="{{ day.day }}"
-                                                data-title="{{ task["title"]|replace("\"","") }}"
-                                                class="button smaller hide-recurrent-task"
-                                                title="Hide this task ocurrence">H</a>
-                                        {% endif %}
-                                            <a href="/{{ calendar_id }}/{{ day.year }}/{{ day.month }}/{{ day.day }}/{{ task["id"] }}{% if "repetition_type" in task %}?repeats=1{% endif %}"
-                                                class="button smaller edit-task"
-                                                title="Edit task">E</a>
-                                    {% endif %}
-                                    {% if "repetition_type" in task %}
-                                        <span class="button smaller recurrent-task" title="Recurent task">R</span>
+                                        <a href="/{{ calendar_id }}/{{ day.year }}/{{ day.month }}/{{ day.day }}/{{ task["id"] }}{% if "repetition_type" in task %}?repeats=1{% endif %}"
+                                            class="button smaller edit-task"
+                                            title="Edit task">E</a>
                                     {% endif %}
                                 </p>
                             </li>
@@ -139,8 +121,8 @@
         statusbar.className = "error";
     };
 
-    function DeleteTask(year, month, day, id, title) {
-        if (confirm("Remove task '" + title + "'?") == true) {
+    function DeleteTask(year, month, day, id, account) {
+        if (confirm("Remove task '" + account + "'?") == true) {
             ShowStatusbar();
             fetch("{{ base_url }}/{{ calendar_id }}/" + year + "/" + month + "/" + day + "/" + id + "/",
               {
@@ -157,8 +139,8 @@
         }
     };
 
-    function DeleteTaskOcurrence(year, month, day, id, title) {
-        if (confirm("Hide task ocurrence of '" + title + "'?") == true) {
+    function DeleteTaskOcurrence(year, month, day, id, account) {
+        if (confirm("Hide task ocurrence of '" + account + "'?") == true) {
             ShowStatusbar();
             fetch("{{ base_url }}/{{ calendar_id }}/" + year + "/" + month + "/" + day + "/" + id + "/hide/",
               {
@@ -356,14 +338,14 @@
                         eventData.target.getAttribute("data-month"),
                         eventData.target.getAttribute("data-day"),
                         eventData.target.getAttribute("data-id"),
-                        eventData.target.getAttribute("data-title"));
+                        eventData.target.getAttribute("data-account"));
             } else {
                 if (eventData.target.className.indexOf("hide-recurrent-task") > -1) {
                     DeleteTaskOcurrence(eventData.target.getAttribute("data-year"),
                                     eventData.target.getAttribute("data-month"),
                                     eventData.target.getAttribute("data-day"),
                                     eventData.target.getAttribute("data-id"),
-                                    eventData.target.getAttribute("data-title"));
+                                    eventData.target.getAttribute("data-account"));
                 }
             }
         }

@@ -10,6 +10,7 @@ from flask_calendar.gregorian_calendar import GregorianCalendar
 
 KEY_TASKS = "tasks"
 KEY_USERS = "users"
+KEY_ACCOUNTS = "accounts"
 KEY_NORMAL_TASK = "normal"
 KEY_REPETITIVE_TASK = "repetition"
 KEY_REPETITIVE_HIDDEN_TASK = "hidden_repetition"
@@ -64,6 +65,20 @@ class CalendarData:
             if month < current_month:
                 return True
         return False
+    
+    
+    def accounts_from_calendar(self, data: Dict) -> List:
+        if not data:
+            raise ValueError("Incomplete data for calendar")
+        if KEY_ACCOUNTS not in data:
+            return {}
+
+        accounts = []  # type: List
+        
+        for account in data[KEY_ACCOUNTS]:
+            accounts.append(account)
+        return accounts
+
 
     def tasks_from_calendar(self, year: int, month: int, data: Dict) -> Dict:
         if not data or KEY_TASKS not in data:
@@ -92,6 +107,7 @@ class CalendarData:
                 tasks[month_str] = data[KEY_TASKS][KEY_NORMAL_TASK][year_str][month_str]
 
         return tasks
+
 
     def hide_past_tasks(self, year: int, month: int, tasks: Dict) -> None:
         (current_day, current_month, current_year,) = self.gregorian_calendar.current_date()
@@ -149,6 +165,14 @@ class CalendarData:
                     tasks[repetitive_tasks_month][day].append(task)
 
         return tasks
+    
+    def delete_account(self, calendar_id: str, account_name: str) -> None:
+        deleted = False
+        data = self.load_calendar(calendar_id)
+        if account_name in data[KEY_ACCOUNTS]:
+                data[KEY_ACCOUNTS].pop(account_name)
+        self._save_calendar(data, filename=calendar_id)
+        
 
     def delete_task(self, calendar_id: str, year_str: str, month_str: str, day_str: str, task_id: int,) -> None:
         deleted = False
@@ -198,16 +222,15 @@ class CalendarData:
         year: Optional[int],
         month: Optional[int],
         day: Optional[int],
-        title: str,
-        is_all_day: bool,
-        start_time: str,
+        account: str,
+        amount: str,
+        credit_debit: str,
         details: str,
         color: str,
         has_repetition: bool,
         repetition_type: Optional[str],
         repetition_subtype: Optional[str],
         repetition_value: int,
-        end_time: Optional[str] = None,
     ) -> bool:
         details = details if len(details) > 0 else "&nbsp;"
         data = self.load_calendar(calendar_id)
@@ -215,10 +238,9 @@ class CalendarData:
         new_task = {
             "id": int(time.time()),
             "color": color,
-            "start_time": start_time,
-            "end_time": end_time if end_time else start_time,
-            "is_all_day": is_all_day,
-            "title": title,
+            "amount": amount,
+            "account": account,
+            "credit_debit":credit_debit,
             "details": details,
         }
         if has_repetition:
@@ -242,6 +264,14 @@ class CalendarData:
                 data[KEY_TASKS][KEY_NORMAL_TASK][year_str][month_str][day_str] = []
             data[KEY_TASKS][KEY_NORMAL_TASK][year_str][month_str][day_str].append(new_task)
 
+        self._save_calendar(data, filename=calendar_id)
+        return True
+    
+    def create_account(
+        self, calendar_id: str, account_name: str) -> None:
+        data = self.load_calendar(calendar_id)
+        if account_name not in data[KEY_ACCOUNTS]:
+            data[KEY_ACCOUNTS][account] = {}
         self._save_calendar(data, filename=calendar_id)
         return True
 

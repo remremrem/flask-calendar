@@ -1,4 +1,4 @@
-import re
+import re, sys
 from typing import Optional, cast  # noqa: F401
 
 import flask_calendar.constants as constants
@@ -61,7 +61,7 @@ def do_login_action() -> Response:
         }
 
         samesite_policy = current_app.config.get("COOKIE_SAMESITE_POLICY", None)
-        # Certain Flask versions don't support 'samesite' param
+        # Certain Flask versions don't support 'samesite' paramraen
         if samesite_policy:
             cookie_kwargs.update({"samesite": samesite_policy})
 
@@ -96,6 +96,14 @@ def main_calendar_action(calendar_id: str) -> Response:
 
     tasks = calendar_data.tasks_from_calendar(year, month, data)
     tasks = calendar_data.add_repetitive_tasks_from_calendar(year, month, data, tasks)
+    accounts = calendar_data.accounts_from_calendar(data)
+    
+    print("tasks: ", tasks, file=sys.stderr)
+    print("keys: ", tasks.keys(), file=sys.stderr)
+    for m in tasks.keys():
+        print("month: ", m, file=sys.stderr)
+        for t in tasks[m]:
+            print("task: ", t, "\n", file=sys.stderr)
 
     if not view_past_tasks:
         calendar_data.hide_past_tasks(year, month, tasks)
@@ -121,10 +129,20 @@ def main_calendar_action(calendar_id: str) -> Response:
             next_month_link=next_month_link(year, month),
             base_url=current_app.config["BASE_URL"],
             tasks=tasks,
+            accounts=accounts,
             display_view_past_button=current_app.config["SHOW_VIEW_PAST_BUTTON"],
             weekdays_headers=weekdays_headers,
         ),
     )
+
+@authenticated
+@authorized
+def new_account_action(calendar_id: str, account_name:str) -> Response:
+    calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
+    calendar_data.create_account(calendar_id=calendar_id, account_name=account_name)
+    
+
+    return cast(Response, jsonify({}))
 
 
 @authenticated
@@ -145,7 +163,6 @@ def new_task_action(calendar_id: str, year: int, month: int) -> Response:
 
     task = {
         "date": CalendarData.date_for_frontend(year, month, day),
-        "is_all_day": True,
         "repeats": False,
         "details": "",
     }
@@ -227,7 +244,9 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
     calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
 
     # For creation of "updated" task use only form data
-    title = request.form["title"].strip()
+    account = request.form["account"].strip()
+    amount = request.form["amount"].strip()
+    credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")
     if len(date) > 0:
         fragments = re.split("-", date)
@@ -236,9 +255,6 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
         updated_day = int(fragments[2])  # type: Optional[int]
     else:
         updated_year = updated_month = updated_day = None
-    is_all_day = request.form.get("is_all_day", "0") == "1"
-    start_time = request.form["start_time"]
-    end_time = request.form.get("end_time", None)
     details = request.form["details"].replace("\r", "").replace("\n", "<br>")
     color = request.form["color"]
     has_repetition = request.form.get("repeats", "0") == "1"
@@ -251,10 +267,9 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
         year=updated_year,
         month=updated_month,
         day=updated_day,
-        title=title,
-        is_all_day=is_all_day,
-        start_time=start_time,
-        end_time=end_time,
+        account=account,
+        amount=amount,
+        credit_debit=credit_debit,
         details=details,
         color=color,
         has_repetition=has_repetition,
@@ -279,7 +294,9 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
 @authenticated
 @authorized
 def save_task_action(calendar_id: str) -> Response:
-    title = request.form["title"].strip()
+    account = request.form["account"].strip()
+    amount = request.form["amount"].strip()
+    credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")
     if len(date) > 0:
         date_fragments = re.split("-", date)
@@ -288,15 +305,15 @@ def save_task_action(calendar_id: str) -> Response:
         day = int(date_fragments[2])  # type: Optional[int]
     else:
         year = month = day = None
-    is_all_day = request.form.get("is_all_day", "0") == "1"
-    start_time = request.form["start_time"]
-    end_time = request.form.get("end_time", None)
     details = request.form["details"].replace("\r", "").replace("\n", "<br>")
     color = request.form["color"]
     has_repetition = request.form.get("repeats", "0") == "1"
     repetition_type = request.form.get("repetition_type")
     repetition_subtype = request.form.get("repetition_subtype")
     repetition_value = int(request.form["repetition_value"])
+    
+    print("credit_debit: ", credit_debit, file=sys.stderr)
+    print("amount: ", amount, file=sys.stderr)
 
     calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
     calendar_data.create_task(
@@ -304,10 +321,9 @@ def save_task_action(calendar_id: str) -> Response:
         year=year,
         month=month,
         day=day,
-        title=title,
-        is_all_day=is_all_day,
-        start_time=start_time,
-        end_time=end_time,
+        account=account,
+        amount=amount,
+        credit_debit=credit_debit,
         details=details,
         color=color,
         has_repetition=has_repetition,
@@ -329,6 +345,15 @@ def delete_task_action(calendar_id: str, year: str, month: str, day: str, task_i
     calendar_data.delete_task(
         calendar_id=calendar_id, year_str=year, month_str=month, day_str=day, task_id=int(task_id),
     )
+
+    return cast(Response, jsonify({}))
+
+@authenticated
+@authorized
+def delete_account_action(calendar_id: str, account_name:str) -> Response:
+    calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
+    calendar_data.delete_account(calendar_id=calendar_id, account_name=account_name)
+    
 
     return cast(Response, jsonify({}))
 

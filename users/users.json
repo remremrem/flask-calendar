@@ -1,8 +1,1 @@
-{
-    "a_username": {
-        "username": "a_username",
-        "password": "5db0240249f03a49d95dbe624ef856293b8c1fae0703c0b725c013f585778074",
-        "default_calendar": "sample",
-        "ics_key": "an_ics_key"
-    }
-}
+{"a_username": {"username": "a_username", "password": "5db0240249f03a49d95dbe624ef856293b8c1fae0703c0b725c013f585778074", "default_calendar": "sample", "ics_key": "an_ics_key"}, "rane": {"username": "rane", "password": "64b61ec3724f7d99f6898b5536a69d26bfa8677c98aff21ef717417a328ef039", "default_calendar": "mtspurr1", "ics_key": "an_ics_key"}, "bob": {"username": "bob", "password": "1ca44bbff36a4875e6d8b3975499f310c5603e399727c90bf7da704f94e0a19a", "default_calendar": "sample", "ics_key": "an_ics_key"}}

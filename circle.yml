@@ -1,19 +1,8 @@
-version: 2.1
-
-workflows:
-  build-and-test:
-    jobs:
-      - build:
-          context: dockerauth
-
+version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_PASSWORD
-    resource_class: small
+       - image: circleci/python:3.6
     steps:
        - checkout
        - run: sudo pip install -r requirements.txt
