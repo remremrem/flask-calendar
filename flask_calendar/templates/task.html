@@ -23,36 +23,38 @@
     {% endif %}
     <div id="task-details-form" class="task-details-form">
         
-        <label for="account">Account</label>
-        <select id="account" name="account" required>
+        <label for="account_select"> Account </label>
+        <select id="account_select" name="account_select" required>
         {% set count=1 %}
         {% for account in accounts %}
+            {{ account }}
             <option value="{{ count }}">{{ account }}</option>
         {% endfor %}
         </select>
         
         &nbsp; &nbsp; &nbsp; &nbsp;
         
-        <label for="add_account">add new account</label>
-        <input type="checkbox" id="add_account" name="add_account" value="0"/>
+        <label for="add_account_checkbox"> add new account </label>
+        <input type="checkbox" id="add_account_checkbox" name="add_account_checkbox" value="0"/>
 
+        
         <div id="new_account_block" class="hidden">
         <input type="text" autocomplete="off" tabindex="0" placeholder="new_account_name"
             id="new_account_name" name="new_account_name" minlength="2" />
         
-        <input type="button" class="header-button" value="add"
-            onclick="window.location='/{{ calendar_id }}/new_account'" title="add" />
+        <input type="button" class="form-button" value="add_account_button" id="add_account_button" title="add_account_button"/>
         </div>
+        
         <br/>
         <br/>
 
-        <label for="amount">Amount</label>
+        <label for="amount"> Amount </label>
         <input type="number" step="0.01" autocomplete="off" placeholder="0.00" value="{{ task.get("amount", "") }}"
             id="amount" name="amount" minlength="2" required />
         <br/>
         <br/>
 
-        <label for="date_picker">Date</label>
+        <label for="date_picker"> Date </label>
         <input id="date_picker" type="date" value="{{ task["date"] }}">
         <input type="hidden" id="date" name="date" value="{{ task["date"] }}" />
         <br/>
@@ -253,13 +255,13 @@
     };
 
     window.onload = function() {
-        document.getElementById("add_account").onclick = function(eventData) {
+        document.getElementById("add_account_checkbox").onclick = function(eventData) {
             if (eventData.target.checked === true) {
                 document.getElementById("new_account_block").className = "";
-                document.getElementById("account").className = "hidden";
+                document.getElementById("account_select").className = "hidden";
             } else {
                 document.getElementById("new_account_block").className = "hidden";
-                document.getElementById("account").className = "";
+                document.getElementById("account_select").className = "";
             }
         };
         
@@ -348,6 +350,18 @@
                     }
                 });
             }
+        };
+
+        document.getElementById("add_account_button").onclick = function() {
+            fetch("{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/"+document.getElementById("new_account_name").value+"/new_account",
+                {
+                method: "post",
+                credentials: "include"
+                }
+            )
+            setTimeout(function() {
+                window.location.reload(true)
+            }, 500);
         };
     }
 </script>

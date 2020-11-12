@@ -1,5 +1,5 @@
 import json
-import os
+import os, sys
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, cast
@@ -269,9 +269,13 @@ class CalendarData:
     
     def create_account(
         self, calendar_id: str, account_name: str) -> None:
+        print("CALENDAR DATA -> CREARE_ACCOUNT: ", account_name, file=sys.stderr)
         data = self.load_calendar(calendar_id)
+        print("DATA: ", data)
+        if "accounts" not in data:
+            data[KEY_ACCOUNTS] = {}
         if account_name not in data[KEY_ACCOUNTS]:
-            data[KEY_ACCOUNTS][account] = {}
+            data[KEY_ACCOUNTS][account_name] = {}
         self._save_calendar(data, filename=calendar_id)
         return True
 

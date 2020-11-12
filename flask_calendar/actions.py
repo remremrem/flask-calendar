@@ -100,6 +100,7 @@ def main_calendar_action(calendar_id: str) -> Response:
     
     print("tasks: ", tasks, file=sys.stderr)
     print("keys: ", tasks.keys(), file=sys.stderr)
+    print("accounts: ", accounts, file=sys.stderr)
     for m in tasks.keys():
         print("month: ", m, file=sys.stderr)
         for t in tasks[m]:
@@ -137,7 +138,8 @@ def main_calendar_action(calendar_id: str) -> Response:
 
 @authenticated
 @authorized
-def new_account_action(calendar_id: str, account_name:str) -> Response:
+def new_account_action(calendar_id: str, year: int, month: int, account_name:str) -> Response:
+    print("ACTIONS -> NEW_ACCOUNT_ACTION: ", account_name, file=sys.stderr)
     calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
     calendar_data.create_account(calendar_id=calendar_id, account_name=account_name)
     
@@ -149,11 +151,18 @@ def new_account_action(calendar_id: str, account_name:str) -> Response:
 @authorized
 def new_task_action(calendar_id: str, year: int, month: int) -> Response:
     GregorianCalendar.setfirstweekday(current_app.config["WEEK_STARTING_DAY"])
+    
+    calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])    
+    try:
+        data = calendar_data.load_calendar(calendar_id)
+    except FileNotFoundError:
+        abort(404)
 
     current_day, current_month, current_year = GregorianCalendar.current_date()
     year = max(min(int(year), current_app.config["MAX_YEAR"]), current_app.config["MIN_YEAR"])
     month = max(min(int(month), 12), 1)
     month_names = GregorianCalendar.MONTH_NAMES
+    accounts = calendar_data.accounts_from_calendar(data)
 
     if current_month == month and current_year == year:
         day = current_day
@@ -180,6 +189,7 @@ def new_task_action(calendar_id: str, year: int, month: int) -> Response:
             max_year=current_app.config["MAX_YEAR"],
             month_names=month_names,
             task=task,
+            accounts=accounts,
             base_url=current_app.config["BASE_URL"],
             editing=False,
             emojis_enabled=emojis_enabled,

@@ -18,6 +18,7 @@ from flask_calendar.actions import (
     save_task_action,
     update_task_action,
     update_task_day_action,
+    new_account_action
 )
 from flask_calendar.app_utils import task_details_for_markup
 
@@ -48,6 +49,9 @@ def create_app(config_overrides: Dict = None) -> Flask:
     app.add_url_rule("/<calendar_id>/", "main_calendar_action", main_calendar_action, methods=["GET"])
     app.add_url_rule(
         "/<calendar_id>/<year>/<month>/new_task", "new_task_action", new_task_action, methods=["GET"],
+    )
+    app.add_url_rule(
+        "/<calendar_id>/<year>/<month>/<account_name>/new_account", "new_account_action", new_account_action, methods=["POST"],
     )
     app.add_url_rule(
         "/<calendar_id>/<year>/<month>/<day>/<task_id>/", "edit_task_action", edit_task_action, methods=["GET"],
