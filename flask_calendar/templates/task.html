@@ -36,7 +36,6 @@
         {% else %}
         
             <select id="account_select" name="account_select" required>
-                {% set count=1 %}
                 {% for account in accounts %}
                     {{ account }}
                     <option value="{{ account }}">{{ account }}</option>
@@ -119,29 +118,9 @@
             <label for="type_monthly">Occurs Monthly</label>
             <br/>
 
-            <input type="radio" id="subtype_weekly" name="repetition_subtype" value="w"
-                {% if task.get("repetition_subtype") == "w" %}
-                    checked="checked"
-                {% endif %}
-                >
-            <label for="subtype_weekly">Week day</label>
-
-            <input type="radio" id="subtype_monthly" name="repetition_subtype" value="m"
-                {% if task.get("repetition_subtype") == "m" %}
-                    checked="checked"
-                {% else %}
-                    disabled="disabled"
-                {% endif %}
-                >
-            <label for="subtype_monthly">Month day</label>
-            <br/>
 
             <label for="repetition_value_weekday">Week Day</label>
-            <select name="repetition_value_weekday" id="repetition_value_weekday"
-                {% if task.get("repetition_subtype") == "m" %}
-                    disabled="disabled"
-                {% endif %}
-                >
+            <select name="repetition_value_weekday" id="repetition_value_weekday">
                 <option value="0">Monday</option>
                 <option value="1">Tuesday</option>
                 <option value="2">Wednesday</option>
@@ -152,11 +131,7 @@
             </select>
 
             <label for="repetition_value_monthday">Month Day</label>
-            <select name="repetition_value_monthday" id="repetition_value_monthday"
-                {% if task.get("repetition_subtype") == "w" %}
-                    disabled="disabled"
-                {% endif %}
-                >
+            <select name="repetition_value_monthday" id="repetition_value_monthday">
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -185,9 +160,9 @@
                 <option value="26">26</option>
                 <option value="27">27</option>
                 <option value="28">28</option>
-                <option value="29">29</option>
+                <<!-- <option value="29">29</option>
                 <option value="30">30</option>
-                <option value="31">31</option>
+                <option value="31">31</option> -->
             </select>
 
             <input type="hidden" min="0" max="31" id="repetition_value" name="repetition_value" value="0" />
@@ -231,7 +206,6 @@
     const editing = {% if editing %}true{% else %}false{% endif %};
     const currentRepetitionValue = {{ task.get("repetition_value", 0) }};
     const repetitionType = "{{ task.get("repetition_type", "") }}";
-    const repetitionSubtype = "{{ task.get("repetition_subtype", "") }}";
 
     if (editing === true) {
         document.getElementById("repetition_value").value = currentRepetitionValue;
@@ -247,16 +221,12 @@
     }
 
     select_repetition_value_weekday = function(resetRepetitionValue = false) {
-        document.getElementById("repetition_value_weekday").disabled = false;
-        document.getElementById("repetition_value_monthday").disabled = true;
         document.getElementById("repetition_value_weekday").selectedIndex = 0;
         // first weekday
         document.getElementById("repetition_value").value = 0;
     };
 
     select_repetition_value_monthday = function() {
-        document.getElementById("repetition_value_weekday").disabled = true;
-        document.getElementById("repetition_value_monthday").disabled = false;
         document.getElementById("repetition_value_monthday").selectedIndex = 0;
         // first day of the month
         document.getElementById("repetition_value").value = 1;
@@ -264,8 +234,6 @@
 
     select_type_weekly = function() {
         select_repetition_value_weekday();
-        document.getElementById("subtype_monthly").disabled = true;
-        document.getElementById("subtype_weekly").disabled = false;
     };
 
     window.onload = function() {
@@ -282,7 +250,6 @@
         document.getElementById("repeats").onclick = function(eventData) {
             if (eventData.target.checked === true) {
                 document.getElementById("type_monthly").checked = true;
-                document.getElementById("subtype_monthly").checked = true;
                 document.getElementById("repetition_block").className = "";
                 select_type_weekly();
             } else {
@@ -292,24 +259,14 @@
                 document.getElementById("repetition_value_monthday").disabled = true;
                 // and set defaults
                 document.getElementById("type_monthly").checked = true;
-                document.getElementById("subtype_monthly").checked = true;
             }
         };
 
         document.getElementById("type_weekly").onclick = function(eventData) {
             select_type_weekly();
-            document.getElementById("subtype_weekly").checked = true;
         };
 
         document.getElementById("type_monthly").onclick = function(eventData) {
-            document.getElementById("subtype_monthly").disabled = false;
-        };
-
-        document.getElementById("subtype_weekly").onclick = function(eventData) {
-            select_repetition_value_weekday();
-        };
-
-        document.getElementById("subtype_monthly").onclick = function(eventData) {
             select_repetition_value_monthday();
         };
 

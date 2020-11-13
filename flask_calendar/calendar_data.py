@@ -11,6 +11,7 @@ from flask_calendar.gregorian_calendar import GregorianCalendar
 KEY_TASKS = "tasks"
 KEY_USERS = "users"
 KEY_ACCOUNTS = "accounts"
+KEY_BALANCE = "balance"
 KEY_NORMAL_TASK = "normal"
 KEY_REPETITIVE_TASK = "repetition"
 KEY_REPETITIVE_HIDDEN_TASK = "hidden_repetition"
@@ -78,6 +79,13 @@ class CalendarData:
         for account in data[KEY_ACCOUNTS]:
             accounts.append(account)
         return accounts
+    
+    
+    def balance_from_calendar(self, data: Dict) -> List:
+        if not data:
+            raise ValueError("Incomplete data for calendar")
+        
+        return data[KEY_BALANCE]
 
 
     def tasks_from_calendar(self, year: int, month: int, data: Dict) -> Dict:
@@ -271,11 +279,18 @@ class CalendarData:
         self, calendar_id: str, account_name: str) -> None:
         print("CALENDAR DATA -> CREARE_ACCOUNT: ", account_name, file=sys.stderr)
         data = self.load_calendar(calendar_id)
-        print("DATA: ", data)
         if "accounts" not in data:
             data[KEY_ACCOUNTS] = {}
         if account_name not in data[KEY_ACCOUNTS]:
             data[KEY_ACCOUNTS][account_name] = {}
+        self._save_calendar(data, filename=calendar_id)
+        return True
+    
+    def set_balance(
+        self, calendar_id: str, new_balance: float) -> None:
+        print("CALENDAR DATA -> SET_BALANCE: ", new_balance, file=sys.stderr)
+        data = self.load_calendar(calendar_id)
+        data[KEY_BALANCE] = new_balance
         self._save_calendar(data, filename=calendar_id)
         return True
 

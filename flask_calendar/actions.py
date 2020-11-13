@@ -97,14 +97,9 @@ def main_calendar_action(calendar_id: str) -> Response:
     tasks = calendar_data.tasks_from_calendar(year, month, data)
     tasks = calendar_data.add_repetitive_tasks_from_calendar(year, month, data, tasks)
     accounts = calendar_data.accounts_from_calendar(data)
+    balance = calendar_data.balance_from_calendar(data)
     
-    print("tasks: ", tasks, file=sys.stderr)
-    print("keys: ", tasks.keys(), file=sys.stderr)
-    print("accounts: ", accounts, file=sys.stderr)
-    for m in tasks.keys():
-        print("month: ", m, file=sys.stderr)
-        for t in tasks[m]:
-            print("task: ", t, "\n", file=sys.stderr)
+    print("month: ", month, file=sys.stderr)
 
     if not view_past_tasks:
         calendar_data.hide_past_tasks(year, month, tasks)
@@ -131,6 +126,7 @@ def main_calendar_action(calendar_id: str) -> Response:
             base_url=current_app.config["BASE_URL"],
             tasks=tasks,
             accounts=accounts,
+            balance=balance,
             display_view_past_button=current_app.config["SHOW_VIEW_PAST_BUTTON"],
             weekdays_headers=weekdays_headers,
         ),
@@ -142,6 +138,17 @@ def new_account_action(calendar_id: str, year: int, month: int, account_name:str
     print("ACTIONS -> NEW_ACCOUNT_ACTION: ", account_name, file=sys.stderr)
     calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
     calendar_data.create_account(calendar_id=calendar_id, account_name=account_name)
+    
+
+    return cast(Response, jsonify({}))
+
+
+@authenticated
+@authorized
+def set_balance_action(calendar_id: str, new_balance:float) -> Response:
+    print("ACTIONS -> SET_BALANCE_ACTION: ", new_balance, file=sys.stderr)
+    calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
+    calendar_data.set_balance(calendar_id=calendar_id, new_balance=new_balance)
     
 
     return cast(Response, jsonify({}))

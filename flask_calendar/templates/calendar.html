@@ -20,6 +20,12 @@
             title="Next month" />
         <div class="current-date">
             {{ month_name }} {{ year }}
+            
+            
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Current Balance: $ {{ balance }}
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+            <input type="button" class="form-button" value="SetBalance" id="set_balance_button" title="set_balance_button"/>
+            
         </div>
         {% if month != current_month or year != current_year %}
             <div class="back-to-current">
@@ -351,6 +357,23 @@
         }
 
         return;
+    };
+    
+
+    document.getElementById("set_balance_button").onclick = function(eventData) {
+        new_b = parseFloat(prompt("Enter new balance amount", ""))
+        if (isNaN(new_b) === false) {
+            fetch("{{ base_url }}/{{ calendar_id }}/"+new_b+"/set_balance",
+                {
+                method: "post",
+                credentials: "include"
+                })
+            .then(response => {
+                if (response.status === 200) {
+                    window.location = "{{ base_url }}/{{ calendar_id }}/?y={{ year }}&m={{ month }}";
+                }
+            });
+        }
     };
 </script>
 </body>
