@@ -99,7 +99,8 @@ def main_calendar_action(calendar_id: str) -> Response:
     accounts = calendar_data.accounts_from_calendar(data)
     balance = calendar_data.balance_from_calendar(data)
     
-    print("month: ", month, file=sys.stderr)
+    print("TASKS!!: ", tasks, file=sys.stderr)
+    print("ACCOUNTS!!: ", accounts, file=sys.stderr)
 
     if not view_past_tasks:
         calendar_data.hide_past_tasks(year, month, tasks)
@@ -108,6 +109,8 @@ def main_calendar_action(calendar_id: str) -> Response:
         weekdays_headers = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
     else:
         weekdays_headers = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+        
+    calendar_data.sort_balances(calendar_id, 5)
 
     return cast(
         Response,
@@ -152,6 +155,34 @@ def set_balance_action(calendar_id: str, new_balance:float) -> Response:
     
 
     return cast(Response, jsonify({}))
+
+@authenticated
+@authorized
+def change_amount_action(calendar_id: str, year: str, month: int, day: int, task_id: int, new_amount:float) -> Response:
+    print("ACTIONS -> CHANGE_AMOUNT_ACTION: ", new_amount, file=sys.stderr)
+    calendar_data = CalendarData(current_app.config["DATA_FOLDER"], current_app.config["WEEK_STARTING_DAY"])
+    repeats = False
+    try:
+        task = calendar_data.repetitive_task_from_calendar(
+                calendar_id=calendar_id, year=year, month=month, task_id=int(task_id)
+            )
+        repeats = True
+    except (FileNotFoundError, IndexError):
+        try:
+            task = calendar_data.task_from_calendar(
+                calendar_id=calendar_id, year=year, month=month, day=day, task_id=int(task_id),
+            )
+            
+        except (FileNotFoundError, IndexError):
+            abort(404)
+    
+    calendar_data.update_task_amount(
+        calendar_id=calendar_id, year=year, month=month, day=day, task_id=int(task_id), new_amount='{0:.2f}'.format(float(new_amount)), repeats=repeats
+    )
+    
+    return cast(Response, jsonify({}))
+
+
 
 
 @authenticated
@@ -263,7 +294,7 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
 
     # For creation of "updated" task use only form data
     account = request.form["account_select"].strip()
-    amount = request.form["amount"].strip()
+    amount = '{0:.2f}'.format(float(request.form["amount"].strip()))
     credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")
     if len(date) > 0:
@@ -313,7 +344,7 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
 @authorized
 def save_task_action(calendar_id: str) -> Response:
     account = request.form["account_select"].strip()
-    amount = request.form["amount"].strip()
+    amount = '{0:.2f}'.format(float(request.form["amount"].strip()))
     credit_debit = request.form["credit_debit"].strip()
     date = request.form.get("date", "")
     if len(date) > 0:

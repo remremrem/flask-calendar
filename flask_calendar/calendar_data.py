@@ -12,6 +12,7 @@ KEY_TASKS = "tasks"
 KEY_USERS = "users"
 KEY_ACCOUNTS = "accounts"
 KEY_BALANCE = "balance"
+KEY_BALANCES = "balances"
 KEY_NORMAL_TASK = "normal"
 KEY_REPETITIVE_TASK = "repetition"
 KEY_REPETITIVE_HIDDEN_TASK = "hidden_repetition"
@@ -73,12 +74,8 @@ class CalendarData:
             raise ValueError("Incomplete data for calendar")
         if KEY_ACCOUNTS not in data:
             return {}
-
-        accounts = []  # type: List
-        
-        for account in data[KEY_ACCOUNTS]:
-            accounts.append(account)
-        return accounts
+        else:
+            return data[KEY_ACCOUNTS]
     
     
     def balance_from_calendar(self, data: Dict) -> List:
@@ -171,7 +168,7 @@ class CalendarData:
 
                 for task in day_tasks:
                     tasks[repetitive_tasks_month][day].append(task)
-
+        print("ADD REP TASKS OH YEAH DAWG!!!: ", tasks, file=sys.stderr)
         return tasks
     
     def delete_account(self, calendar_id: str, account_name: str) -> None:
@@ -223,6 +220,41 @@ class CalendarData:
         data[KEY_TASKS][KEY_NORMAL_TASK][year_str][month_str][new_day_str].append(task_to_update)
 
         self._save_calendar(data, filename=calendar_id)
+
+
+    def update_task_amount(
+        self, calendar_id: str, year: str, month: str, day: str, task_id: int, new_amount: float, repeats: bool
+    ) -> None:
+        data = self.load_calendar(calendar_id)
+        
+        
+        if repeats: #if its a repeating task keep the dated transaction amount in the account "transactions" dictionary
+            account = None
+            for t in data[KEY_TASKS][KEY_REPETITIVE_TASK]: #first find out the account name
+                if int(t["id"]) == task_id:
+                    account = t["account"]
+                    break
+            if account: #then update the account's transaction dictionary
+                if not "transactions" in data[KEY_ACCOUNTS][account]:
+                    data[KEY_ACCOUNTS][account]["transactions"] = {}
+                # {{accounts: {account_name: {transactions: {12345_year-month-day: new_amount} } } } } }
+                data[KEY_ACCOUNTS][account]["transactions"][ str(task_id) + "_" + "-".join([ str(year), str(month), str(day) ]) ] = str(round(float(new_amount), 2))
+        else: # if it's not a repeating task, change the amount in the task itself
+            updated = False
+            for index, task in enumerate(data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day]):
+                if task["id"] == task_id:
+                    print("[KEY_TASKS][KEY_NORMAL_TASK][year][month]: ", data[KEY_TASKS][KEY_NORMAL_TASK][year][month], "DAY: ", day, file=sys.stderr)
+                    data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day][index]["amount"] = new_amount
+                    updated = True
+                
+
+            if not updated:
+                return
+            
+
+
+        self._save_calendar(data, filename=calendar_id)
+        
 
     def create_task(
         self,
@@ -292,6 +324,75 @@ class CalendarData:
         data = self.load_calendar(calendar_id)
         data[KEY_BALANCE] = new_balance
         self._save_calendar(data, filename=calendar_id)
+        return True
+    
+    def sort_balances(
+        self, calendar_id: str, max_months: int) -> None:
+        print("CALENDAR DATA -> SORT_BALANCES: ", file=sys.stderr)
+        data = self.load_calendar(calendar_id)
+        
+        balance_keys = []
+        balance_values = []
+        
+        today = self.gregorian_calendar.current_date() #[day, month, year]
+        c = max_months
+        tasks = []
+        while c > -1:
+            month = today[1]+c
+            year = today[2]
+            if month > 12:
+                month -= 12
+                year += 1
+            tasks.append([month, self._repetitive_tasks_from_calendar(year, month, data)[str(month)]])
+            c-=1
+            print(year, month, "TASKS NOW BITCH: ", tasks, file=sys.stderr)
+        
+        """transactions = {}
+        for t in data[KEY_TASKS][KEY_REPETITIVE_TASK]:
+            account = t["account"]
+            
+            if "transactions" in data[KEY_ACCOUNTS][account]:
+                for trans in data[KEY_ACCOUNTS][account]["transactions"]:
+                    [ str(task_id) + "_" + "-".join([ str(year), str(month), str(day) ]) ] = str(round(float(new_amount), 2))
+            
+        for y in data[KEY_TASKS][KEY_NORMAL_TASK]:
+            if int(y) >= int(today[2]):
+                for m in data[KEY_TASKS][KEY_NORMAL_TASK][y]:
+                    if int(m) >= int(today[1]):
+                        for d in data[KEY_TASKS][KEY_NORMAL_TASK][y][m]:
+                            if int(d) >= int(today[0]):
+                                for t in data[KEY_TASKS][KEY_NORMAL_TASK][y][m][d]:
+                                    tasks.append(t)
+        
+        for t in tasks: pass
+            
+        if KEY_BALANCES not in data:
+            data[KEY_BALANCES] = {}
+        
+        
+        if repeats: #if its a repeating task keep the dated transaction amount in the account "transactions" dictionary
+            account = None
+            for t in data[KEY_TASKS][KEY_REPETITIVE_TASK]: #first find out the account name
+                if int(t["id"]) == task_id:
+                    account = t["account"]
+                    break
+            if account: #then update the account's transaction dictionary
+                if not "transactions" in data[KEY_ACCOUNTS][account]:
+                    data[KEY_ACCOUNTS][account]["transactions"] = {}
+                # {{accounts: {account_name: {transactions: {12345_year-month-day: new_amount} } } } } }
+                data[KEY_ACCOUNTS][account]["transactions"][ str(task_id) + "_" + "-".join([ str(year), str(month), str(day) ]) ] = str(round(float(new_amount), 2))
+        else: # if it's not a repeating task, change the amount in the task itself
+            updated = False
+            for index, task in enumerate(data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day]):
+                if task["id"] == task_id:
+                    print("[KEY_TASKS][KEY_NORMAL_TASK][year][month]: ", data[KEY_TASKS][KEY_NORMAL_TASK][year][month], "DAY: ", day, file=sys.stderr)
+                    data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day][index]["amount"] = new_amount
+                    updated = True
+        
+        
+        
+        
+        self._save_calendar(data, filename=calendar_id)"""
         return True
 
     def hide_repetition_task_instance(

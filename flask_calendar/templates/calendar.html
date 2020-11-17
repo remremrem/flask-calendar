@@ -20,21 +20,20 @@
             title="Next month" />
         <div class="current-date">
             {{ month_name }} {{ year }}
-            
-            
-            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Current Balance: $ {{ balance }}
-            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-            <input type="button" class="form-button" value="SetBalance" id="set_balance_button" title="set_balance_button"/>
-            
         </div>
+        
         {% if month != current_month or year != current_year %}
             <div class="back-to-current">
-                <a href="/{{ calendar_id }}/">back to current</a>
+                <a href="/{{ calendar_id }}/">back to current month</a>
             </div>
         {% endif %}
-        {% if display_view_past_button %}
-            <input id="toggle-past-events" class="toggle-past-events" type="button" value="View Past" onclick="ToggleViewPastTasks();" />
-        {% endif %}
+        
+        <div class="toggle-past-events">
+            Current Balance: $ {{ balance }}
+            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+            <input type="button" class="form-button" value="SetBalance" id="set_balance_button" title="set_balance_button"/>
+        </div>
+        
     </div>
 
     <ul class="calendar-header">
@@ -83,7 +82,21 @@
                                 {% elif task["credit_debit"] == "credit" %}
                                     +
                                 {% endif %}
-                                {{task["amount"]}}
+                                {% set timestamp = task["id"]|string + "_" + day.year|string + "-" + day.month|string + "-" + day.day|string %}
+                                {% if "repetition_value" in task %}
+                                    {% if timestamp in ( accounts[task["account"]]["transactions"] ) %}
+                                        {{ accounts[task["account"]]["transactions"][timestamp] }}
+                                    {% else %}
+                                        {{task["amount"]}}
+                                    {% endif %}
+                                {% else %}
+                                    {{task["amount"]}}
+                                {% endif %}
+                                
+                                {% if day.month == month %}
+                                    <span data_day="{{ day.day }}" data_task="{{ task["id"] }}"><a href="#"  id="change_amount" class="button smaller edit-task" title="Change Amount">$</a></span>
+                                {% endif %}
+                                
                                 <p class="accordion-hidden">
                                     {{ task["details"]|task_details_for_markup|safe }}
                                     {% if day.month == month %}
@@ -111,6 +124,41 @@
 
     function ToggleDetails(target) {
         target.className = target.className === "accordion-hidden" ? "accordion-visible" : "accordion-hidden";
+    };
+
+    function ChangeTransAmount(eventData) {
+        new_ta = parseFloat(prompt("Enter new transaction amount", ""));
+        ShowStatusbar();
+        task = eventData.target.parentNode.getAttribute("data_task");
+        day = eventData.target.parentNode.getAttribute("data_day");
+        if (isNaN(new_ta) === false) {
+            fetch("{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month}}/"+day+"/"+task+"/"+new_ta+"/change_amount",
+                {
+                method: "post",
+                credentials: "include"
+                })
+            .then(response => {
+                if (response.status === 200) {
+                    window.location = "{{ base_url }}/{{ calendar_id }}/?y={{ year }}&m={{ month }}";
+                }
+            });
+        }
+    };
+
+    function SetBalance(eventData) {
+        new_b = parseFloat(prompt("Enter new balance amount", ""))
+        if (isNaN(new_b) === false) {
+            fetch("{{ base_url }}/{{ calendar_id }}/"+new_b+"/set_balance",
+                {
+                method: "post",
+                credentials: "include"
+                })
+            .then(response => {
+                if (response.status === 200) {
+                    window.location = "{{ base_url }}/{{ calendar_id }}/?y={{ year }}&m={{ month }}";
+                }
+            });
+        }
     };
 
     function ShowStatusbar() {
@@ -175,15 +223,6 @@
         return true;
     };
 
-    function ToggleViewPastTasks() {
-        var expirationDate = new Date(),
-            currentSetting = readViewPastTasksSetting();
-
-        expirationDate.setTime(expirationDate.getTime() + 31536000000);
-        document.cookie = "ViewPastTasks=" + (currentSetting ? "0" : "1") +
-                          "; expires=" + expirationDate.toUTCString() + "; path=/";
-        location.reload();
-    };
 
     function DragEnd() {
         moving = false;
@@ -338,6 +377,11 @@
             return;
         }
 
+        if (eventData.target.nodeName === "A" && (eventData.target.title === "Change Amount")) {
+            ChangeTransAmount(eventData);
+            return;
+        }
+
         if (eventData.target.nodeName === "A") {
             if (eventData.target.className.indexOf("remove-task") > -1) {
                 DeleteTask(eventData.target.getAttribute("data-year"),
@@ -361,20 +405,9 @@
     
 
     document.getElementById("set_balance_button").onclick = function(eventData) {
-        new_b = parseFloat(prompt("Enter new balance amount", ""))
-        if (isNaN(new_b) === false) {
-            fetch("{{ base_url }}/{{ calendar_id }}/"+new_b+"/set_balance",
-                {
-                method: "post",
-                credentials: "include"
-                })
-            .then(response => {
-                if (response.status === 200) {
-                    window.location = "{{ base_url }}/{{ calendar_id }}/?y={{ year }}&m={{ month }}";
-                }
-            });
-        }
+        SetBalance(eventData)
     };
+    
 </script>
 </body>
 </html>
