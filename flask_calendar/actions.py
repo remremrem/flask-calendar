@@ -111,6 +111,7 @@ def main_calendar_action(calendar_id: str) -> Response:
         weekdays_headers = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
         
     calendar_data.sort_balances(calendar_id, 5)
+    balances = calendar_data.get_balances(calendar_id)
 
     return cast(
         Response,
@@ -130,6 +131,7 @@ def main_calendar_action(calendar_id: str) -> Response:
             tasks=tasks,
             accounts=accounts,
             balance=balance,
+            balances=balances,
             display_view_past_button=current_app.config["SHOW_VIEW_PAST_BUTTON"],
             weekdays_headers=weekdays_headers,
         ),

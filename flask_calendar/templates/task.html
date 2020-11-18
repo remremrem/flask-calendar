@@ -22,7 +22,6 @@
 {% endif %}
     
     <div id="task-details-form" class="task-details-form">
-        <input type="button" value="poop" id="poopbutt"  hidden>
         <label for="account_select"> Account </label>
         {% if editing %}
             &nbsp; &nbsp; &nbsp;
@@ -174,7 +173,8 @@
         <textarea id="details" name="details" placeholder="Details" autocomplete="off" cols="42"
             rows="8">{{ task["details"]|replace("<br>","\n") }}</textarea>
         <br/>
-
+        
+        {% if 0==1 %}
         <div id="colors-and-emojis">
             <label for="color">Color</label><br/>
             <input class="form-button color-picker" type="color"
@@ -183,16 +183,13 @@
                 <input class="form-button color" style="color:{{ color }}" data-color="{{ color }}" type="button"
                     value="{{ label }}" />
             {% endfor %}
-            <input type="hidden" value="{{ task.get("color", button_default_color_value) }}" id="color" name="color" />
             <br/>
 
-            {% if emojis_enabled and 0==1 %}
-                {% for emoji in buttons_emojis %}
-                    <input class="form-button emoji" type="button" value="{{ emoji }}" />
-                {% endfor %}
-                <br/>
-            {% endif %}
+
         </div>
+        {% endif %}
+        
+        <input type="hidden" value="{{ task.get("color", button_default_color_value) }}" id="color" name="color" />
 
         <input class="form-button" type="submit" value="Save" />
 
@@ -209,18 +206,11 @@
 
     if (editing === true) {
         document.getElementById("repetition_value").value = currentRepetitionValue;
-        if (repetitionSubtype === "m") {
-            document.getElementById("repetition_value_monthday").selectedIndex = currentRepetitionValue - 1;
-        }
-        if (repetitionSubtype === "w") {
-            // week days are 0-index
-            document.getElementById("repetition_value_weekday").selectedIndex = currentRepetitionValue;
-        }
     } else {
         document.getElementById("delete-task").disabled = true;
     }
 
-    select_repetition_value_weekday = function(resetRepetitionValue = false) {
+    select_repetition_value_weekday = function() {
         document.getElementById("repetition_value_weekday").selectedIndex = 0;
         // first weekday
         document.getElementById("repetition_value").value = 0;
@@ -283,33 +273,17 @@
         document.getElementById("date_picker").onchange = function(eventData) {
             document.getElementById("date").value = eventData.target.value;
         };
-
-        document.getElementById("color_custom").onchange = function(eventData) {
-            document.getElementById("color").value = eventData.target.value;
+        
+        document.getElementById("debit").onclick = function(eventData) {
+            document.getElementById("color").value = "#A020F0";
         };
-
-        document.getElementById("colors-and-emojis").onclick = function(eventData) {
-            if (eventData.target.nodeName === "INPUT") {
-                switch (eventData.target.className) {
-                    case "form-button color":
-                        document.getElementById("color").value = eventData.target.getAttribute("data-color");
-                        document.getElementById("color_custom").value = eventData.target.getAttribute("data-color");
-                        return false;
-                        break;
-                    case "form-button emoji":
-                        let accountTextbox = document.getElementById("account");
-                        accountTextbox.value = eventData.target.value + " " + accountTextbox.value;
-                        break;
-                    default:
-                        return;
-                }
-            }
-
-            return;
+        
+        document.getElementById("credit").onclick = function(eventData) {
+            document.getElementById("color").value = "#3EB34F";
         };
-
+        
+        
         document.getElementById("delete-task").onclick = function() {
-            document.getElementById("poopbutt").hidden = false
             if (confirm("Remove task '" + document.getElementById("account_select").value +  "'?") === true) {
                 fetch("{{ base_url }}/{{ calendar_id }}/{{ year }}/{{ month }}/{{ day }}/{{ task.get("id") }}/",
                     {
@@ -330,12 +304,12 @@
                 method: "post",
                 credentials: "include"
                 }
-            )
+            );
             setTimeout(function() {
-                window.location.reload(true)
+                window.location.reload(true);
             }, 500);
         };
-    }
+    };
 </script>
 </body>
 </html>

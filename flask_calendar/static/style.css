@@ -209,6 +209,15 @@ ul.tasks li {
     border-radius: 2px;
 }
 
+ul.tasks li.balance {
+    background-color: #444;
+    color: #FEFEFE;
+    margin-bottom: 1px;
+    padding: 1px 4px 2px 2px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
 ul.tasks li a {
     color: #F0F0F0;
 
