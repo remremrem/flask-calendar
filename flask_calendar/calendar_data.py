@@ -2,6 +2,7 @@ import json
 import os, sys
 import time
 from datetime import datetime
+import datetime as dt
 from typing import Dict, List, Optional, cast
 
 import flask_calendar.constants as constants
@@ -37,6 +38,7 @@ class CalendarData:
             raise ValueError("Error loading calendar from file '{}'".format(filename))
         return cast(Dict, contents)
 
+
     def users_list(self, data: Optional[Dict] = None, calendar_id: Optional[str] = None) -> List:
         if data is None:
             if calendar_id is None:
@@ -48,6 +50,7 @@ class CalendarData:
 
         return cast(List, data[KEY_USERS])
 
+
     def user_details(self, username: str, data: Optional[Dict] = None, calendar_id: Optional[str] = None,) -> Dict:
         if data is None:
             if calendar_id is None:
@@ -58,6 +61,7 @@ class CalendarData:
             raise ValueError("Incomplete data for calendar id '{}'".format(calendar_id))
 
         return cast(Dict, data[KEY_USERS][username])
+
 
     @staticmethod
     def is_past(year: int, month: int, current_year: int, current_month: int) -> bool:
@@ -128,6 +132,7 @@ class CalendarData:
                 if day.month == current_month and int(task_day_number) < current_day:
                     tasks[month_str][task_day_number] = []
 
+
     def task_from_calendar(self, calendar_id: str, year: int, month: int, day: int, task_id: int) -> Dict:
         data = self.load_calendar(calendar_id)
 
@@ -142,6 +147,7 @@ class CalendarData:
                 return cast(Dict, task)
         raise ValueError("Task id '{}' not found".format(task_id))
 
+
     def repetitive_task_from_calendar(self, calendar_id: str, year: int, month: int, task_id: int) -> Dict:
         data = self.load_calendar(calendar_id)
 
@@ -149,6 +155,7 @@ class CalendarData:
         task["repeats"] = True
         task["date"] = self.date_for_frontend(year, month, 1)
         return task
+
 
     @staticmethod
     def date_for_frontend(year: int, month: int, day: int) -> str:
@@ -201,6 +208,7 @@ class CalendarData:
                         del data[KEY_TASKS][KEY_REPETITIVE_HIDDEN_TASK][str(task_id)]
 
         self._save_calendar(data, filename=calendar_id)
+
 
     def update_task_day(
         self, calendar_id: str, year_str: str, month_str: str, day_str: str, task_id: int, new_day_str: str,
@@ -307,6 +315,7 @@ class CalendarData:
         self._save_calendar(data, filename=calendar_id)
         return True
     
+    
     def create_account(
         self, calendar_id: str, account_name: str) -> None:
         print("CALENDAR DATA -> CREARE_ACCOUNT: ", account_name, file=sys.stderr)
@@ -318,6 +327,7 @@ class CalendarData:
         self._save_calendar(data, filename=calendar_id)
         return True
     
+    
     def set_balance(
         self, calendar_id: str, new_balance: float) -> None:
         print("CALENDAR DATA -> SET_BALANCE: ", new_balance, file=sys.stderr)
@@ -325,6 +335,59 @@ class CalendarData:
         data[KEY_BALANCE] = new_balance
         self._save_calendar(data, filename=calendar_id)
         return True
+    
+    
+    def _get_task_by_id(self, data: dict, task_id: str):
+        print("CALENDAR DATA -> get_task_by_id: ", task_id, file=sys.stderr)
+
+        index = 0
+        for task in data[KEY_TASKS][KEY_REPETITIVE_TASK]:
+            if task["id"] == task_id:
+                date = [None, None, day]
+                kind = "repeats"
+                return [task, kind, date, index]
+            index += 1
+        
+        for year in data[KEY_TASKS][KEY_NORMAL_TASK]:
+            for month in data[KEY_TASKS][KEY_NORMAL_TASK][year]:
+                for day in data[KEY_TASKS][KEY_NORMAL_TASK][year][month]:
+                    index = 0
+                    for task in data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day]:
+                        if task["id"] == task_id:
+                            date = (int(year), int(month), int(day))
+                            kind = "normal"
+                            return [task, kind, date, index]
+                        index += 1
+    
+    
+    def _get_repetitive_task_amount_by_date(self, data: dict, task: dict, date: list): #date=(year, month, day)
+        print("CALENDAR DATA -> _get_repetitive_task_amount_by_date: ", task, file=sys.stderr)
+        amount = task["amount"]
+        amounts = self._repititive_task_amounts(data, task)
+        if date in amounts:
+            amount = amounts[date]
+        if task["credit_debit"] == "debit":
+            amount = float(amount) * -1
+        return amount
+                    
+    
+    def _repititive_task_amounts(self, data: dict, task: dict) -> dict:
+        print("CALENDAR DATA -> _repetitive_task_amounts: ", task, file=sys.stderr)
+        account = task["account"]
+        amounts = {}
+        if "transactions" in data[KEY_ACCOUNTS][account]:
+            transactions = data[KEY_ACCOUNTS][account]["transactions"]
+        else: return amounts
+        for trans in transactions:
+            
+            amount = transactions[trans]
+            tid = trans.split("_")[0]
+            date = trans.split("_")[1].split("-") #["year", "month", "day"]
+            date = tuple(list(map(int, date))) #(year, month, day)
+            if str(tid) == str(task["id"]):
+                amounts[date] = amount
+        return amounts
+
     
     def sort_balances(
         self, calendar_id: str, max_months: int) -> None:
@@ -343,56 +406,69 @@ class CalendarData:
             if month > 12:
                 month -= 12
                 year += 1
-            tasks.append([month, self._repetitive_tasks_from_calendar(year, month, data)[str(month)]])
+            tasks.append([year, month, self._repetitive_tasks_from_calendar(year, month, data)[str(month)]])
             c-=1
-            print(year, month, "TASKS NOW BITCH: ", tasks, file=sys.stderr)
         
-        """transactions = {}
-        for t in data[KEY_TASKS][KEY_REPETITIVE_TASK]:
-            account = t["account"]
+        trans = {}
+        for month in tasks:
+            for day in month[2]:
+                d = (int(month[0]), int(month[1]), int(day))
+                trans[d] = []
+                print(year, month, "DAYDAYDAY: ", day, file=sys.stderr)
+                for task in month[2][day]:
+                    amount = self._get_repetitive_task_amount_by_date(data, task, d)
+                    trans[d].append(amount)
+        print("REPETITIVE TASK AMOUNT LIST BY DATES AND VALUES: ", trans, file=sys.stderr)
+        
+        tasks = data[KEY_TASKS][KEY_NORMAL_TASK]
+        print("TAAAAAAAASKS: ", tasks, file=sys.stderr)
+        c = max_months 
+        while c > -1:
+            month = today[1]+c
+            year = today[2]
+            if month > 12:
+                month -= 12
+                year += 1  
+            if str(year) in tasks:
+                print("y: ", year, file=sys.stderr) 
+                if str(month) in tasks[str(year)]:
+                    print("m: ", month, file=sys.stderr)
+                    for day in list(range(1,32)):
+                        if str(day) in tasks[str(year)][str(month)]:
+                            print("d: ", day, file=sys.stderr)
+                            d = (int(year), int(month), int(day))
+                            if d not in trans:
+                                trans[d] = []
+                            for task in tasks[str(year)][str(month)][str(day)]:
+                                trans[d].append(task["amount"])
+                            
+            c -=1
+        
+        sorted_trans = list(sorted(trans))
+        sorted_trans.reverse()
+        
+        current = float(data[KEY_BALANCE])
+        balances = {}
+        print("sorted_trans: ", sorted_trans, file=sys.stderr)
+        print("today: ", today, file=sys.stderr)
+        now = datetime.today().toordinal()
+        while sorted_trans:
+            t = sorted_trans.pop()
+            tdate = dt.date(t[0], t[1], t[2]).toordinal()
+            print("t: ", t, file=sys.stderr)
+            if tdate > now:
+                for each in trans[t]:
+                    current +=  float(each)
+                balances[t] = current
+        print("BALANCES: ", balances, file=sys.stderr)
+                
             
-            if "transactions" in data[KEY_ACCOUNTS][account]:
-                for trans in data[KEY_ACCOUNTS][account]["transactions"]:
-                    [ str(task_id) + "_" + "-".join([ str(year), str(month), str(day) ]) ] = str(round(float(new_amount), 2))
-            
-        for y in data[KEY_TASKS][KEY_NORMAL_TASK]:
-            if int(y) >= int(today[2]):
-                for m in data[KEY_TASKS][KEY_NORMAL_TASK][y]:
-                    if int(m) >= int(today[1]):
-                        for d in data[KEY_TASKS][KEY_NORMAL_TASK][y][m]:
-                            if int(d) >= int(today[0]):
-                                for t in data[KEY_TASKS][KEY_NORMAL_TASK][y][m][d]:
-                                    tasks.append(t)
-        
-        for t in tasks: pass
-            
-        if KEY_BALANCES not in data:
-            data[KEY_BALANCES] = {}
-        
-        
-        if repeats: #if its a repeating task keep the dated transaction amount in the account "transactions" dictionary
-            account = None
-            for t in data[KEY_TASKS][KEY_REPETITIVE_TASK]: #first find out the account name
-                if int(t["id"]) == task_id:
-                    account = t["account"]
-                    break
-            if account: #then update the account's transaction dictionary
-                if not "transactions" in data[KEY_ACCOUNTS][account]:
-                    data[KEY_ACCOUNTS][account]["transactions"] = {}
-                # {{accounts: {account_name: {transactions: {12345_year-month-day: new_amount} } } } } }
-                data[KEY_ACCOUNTS][account]["transactions"][ str(task_id) + "_" + "-".join([ str(year), str(month), str(day) ]) ] = str(round(float(new_amount), 2))
-        else: # if it's not a repeating task, change the amount in the task itself
-            updated = False
-            for index, task in enumerate(data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day]):
-                if task["id"] == task_id:
-                    print("[KEY_TASKS][KEY_NORMAL_TASK][year][month]: ", data[KEY_TASKS][KEY_NORMAL_TASK][year][month], "DAY: ", day, file=sys.stderr)
-                    data[KEY_TASKS][KEY_NORMAL_TASK][year][month][day][index]["amount"] = new_amount
-                    updated = True
+
         
         
         
         
-        self._save_calendar(data, filename=calendar_id)"""
+        self._save_calendar(data, filename=calendar_id)
         return True
 
     def hide_repetition_task_instance(
@@ -409,6 +485,7 @@ class CalendarData:
         data[KEY_TASKS][KEY_REPETITIVE_HIDDEN_TASK][task_id_str][year_str][month_str][day_str] = True
 
         self._save_calendar(data, filename=calendar_id)
+
 
     @staticmethod
     def add_task_to_list(tasks: Dict, day_str: str, month_str: str, new_task: Dict) -> None:
@@ -459,6 +536,7 @@ class CalendarData:
 
         return repetitive_tasks
 
+
     @staticmethod
     def _is_repetition_hidden_for_day(data: Dict, id_str: str, year_str: str, month_str: str, day_str: str) -> bool:
         if id_str in data[KEY_TASKS][KEY_REPETITIVE_HIDDEN_TASK]:
@@ -470,6 +548,7 @@ class CalendarData:
                 return True
         return False
 
+
     @staticmethod
     def _is_repetition_hidden(data: Dict, id_str: str, year_str: str, month_str: str) -> bool:
         if id_str in data[KEY_TASKS][KEY_REPETITIVE_HIDDEN_TASK]:
@@ -480,11 +559,13 @@ class CalendarData:
                 return True
         return False
 
+
     def _save_calendar(self, data: Dict, filename: str) -> None:
         self._clear_empty_entries(data)
         self._clear_past_hidden_entries(data)
         with open(os.path.join(".", self.data_folder, "{}.json".format(filename)), "w+") as file:
             json.dump(data, file)
+
 
     @staticmethod
     def _clear_empty_entries(data: Dict) -> None:
@@ -508,6 +589,7 @@ class CalendarData:
 
         for year in years_to_delete:
             del data[KEY_TASKS][KEY_NORMAL_TASK][year]
+
 
     def _clear_past_hidden_entries(self, data: Dict) -> None:
         _, current_month, current_year = self.gregorian_calendar.current_date()
