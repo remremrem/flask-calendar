@@ -362,8 +362,10 @@ class CalendarData:
         amounts = self._repititive_task_amounts(data, task)
         if date in amounts:
             amount = amounts[date]
+        credit_debit = 1
         if task["credit_debit"] == "debit":
-            amount =  '{0:.2f}'.format((abs(float(amount)) * -1))
+            credit_debit = -1
+        amount =  '{0:.2f}'.format((abs(float(amount)) * credit_debit))
         return amount
                     
     
@@ -435,7 +437,10 @@ class CalendarData:
                             if d not in trans:
                                 trans[d] = []
                             for task in tasks[str(year)][str(month)][str(day)]:
-                                trans[d].append('{0:.2f}'.format((abs(float(task["amount"])) * -1)))
+                                credit_debit = -1
+                                if task["credit_debit"] == "credit":
+                                    credit_debit = 1
+                                trans[d].append('{0:.2f}'.format((abs(float(task["amount"])) * credit_debit)))
                             
             c -=1
         

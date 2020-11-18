@@ -40,7 +40,7 @@ COOKIE_SAMESITE_POLICY = "Lax"
 EMOJIS_ENABLED = True
 
 # Colors for new task buttons
-BUTTON_CUSTOM_COLOR_VALUE = "#FF4848"
+BUTTON_CUSTOM_COLOR_VALUE = "#A020F0"
 BUTTONS_COLORS_LIST = (
     ("#FF4848", "Red"),
     ("#3EB34F", "Green"),
