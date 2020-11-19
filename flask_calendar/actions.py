@@ -313,6 +313,11 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
     repetition_subtype = request.form.get("repetition_subtype", "")
     repetition_value = int(request.form["repetition_value"])  # type: int
 
+    # For deletion of old task data use only url data
+    calendar_data.delete_task(
+        calendar_id=calendar_id, year_str=year, month_str=month, day_str=day, task_id=int(task_id),
+    )
+    
     calendar_data.create_task(
         calendar_id=calendar_id,
         year=updated_year,
@@ -327,10 +332,7 @@ def update_task_action(calendar_id: str, year: str, month: str, day: str, task_i
         repetition_type=repetition_type,
         repetition_subtype=repetition_subtype,
         repetition_value=repetition_value,
-    )
-    # For deletion of old task data use only url data
-    calendar_data.delete_task(
-        calendar_id=calendar_id, year_str=year, month_str=month, day_str=day, task_id=int(task_id),
+        task_id=task_id,
     )
 
     if updated_year is None:

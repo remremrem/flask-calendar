@@ -275,12 +275,15 @@ class CalendarData:
         repetition_type: Optional[str],
         repetition_subtype: Optional[str],
         repetition_value: int,
+        task_id: int = None,
     ) -> bool:
         details = details if len(details) > 0 else "&nbsp;"
         data = self.load_calendar(calendar_id)
-
+        tid = task_id
+        if not tid:
+            tid = int(time.time())
         new_task = {
-            "id": int(time.time()),
+            "id": tid,
             "color": color,
             "amount": amount,
             "account": account,
