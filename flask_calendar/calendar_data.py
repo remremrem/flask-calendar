@@ -342,7 +342,7 @@ class CalendarData:
         index = 0
         for task in data[KEY_TASKS][KEY_REPETITIVE_TASK]:
             if task["id"] == task_id:
-                date = [None, None, day]
+                date = (None, None, day)
                 kind = "repeats"
                 return [task, kind, date, index]
             index += 1
@@ -359,7 +359,7 @@ class CalendarData:
                         index += 1
     
     
-    def _get_repetitive_task_amount_by_date(self, data: dict, task: dict, date: list): #date=(year, month, day)
+    def _get_repetitive_task_amount_by_date(self, data: dict, task: dict, date: tuple): #date=(year, month, day)
         print("CALENDAR DATA -> _get_repetitive_task_amount_by_date: ", task, file=sys.stderr)
         amount = task["amount"]
         amounts = self._repititive_task_amounts(data, task)
